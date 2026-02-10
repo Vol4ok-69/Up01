@@ -5,13 +5,14 @@ services:
     image: postgres:15
     container_name: college-schedule-postgres
     environment:
-      - POSTGRES_DB=college-schedule-db
-      - POSTGRES_USER=admin69
-      - POSTGRES_PASSWORD=admin69
+      POSTGRES_DB: college-schedule-db
+      POSTGRES_USER: admin69
+      POSTGRES_PASSWORD: admin69
     ports:
       - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U admin69 -d college-schedule-db" ]
       interval: 5s
