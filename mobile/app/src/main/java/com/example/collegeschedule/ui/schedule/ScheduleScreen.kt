@@ -1,125 +1,128 @@
-    package com.example.collegeschedule.ui.schedule
+package com.example.collegeschedule.ui.schedule
 
-    import androidx.compose.material3.CircularProgressIndicator
-    import androidx.compose.material3.Text
-    import androidx.compose.runtime.*
-    import com.example.collegeschedule.data.dto.ScheduleByDateDto
-    import com.example.collegeschedule.data.network.RetrofitInstance
-    import androidx.compose.foundation.layout.padding
-    import androidx.compose.material3.Scaffold
-    import androidx.compose.ui.Modifier
-    import androidx.compose.material3.ExperimentalMaterial3Api
-    import androidx.compose.foundation.layout.Column
-    import androidx.compose.foundation.layout.Spacer
-    import androidx.compose.foundation.layout.fillMaxWidth
-    import androidx.compose.foundation.layout.height
-    import androidx.compose.material3.*
-    import androidx.compose.ui.unit.dp
-    import com.example.collegeschedule.data.dto.GroupDto
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.example.collegeschedule.data.dto.GroupDto
+import com.example.collegeschedule.data.dto.ScheduleByDateDto
+import com.example.collegeschedule.data.network.RetrofitInstance
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun ScheduleScreen() {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScheduleScreen(
+    selectedGroup: String,
+    onGroupSelected: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    isFavorite: Boolean
+) {
 
-        var groups by remember { mutableStateOf<List<GroupDto>>(emptyList()) }
-        var selectedGroup by remember { mutableStateOf<GroupDto?>(null) }
-        var schedule by remember { mutableStateOf<List<ScheduleByDateDto>>(emptyList()) }
+    var groups by remember { mutableStateOf<List<GroupDto>>(emptyList()) }
+    var schedule by remember { mutableStateOf<List<ScheduleByDateDto>>(emptyList()) }
 
-        var expanded by remember { mutableStateOf(false) }
-        var loading by remember { mutableStateOf(false) }
-        var error by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
 
-        LaunchedEffect(Unit) {
+    // Загрузка списка групп
+    LaunchedEffect(Unit) {
+        try {
             loading = true
-            try {
-                groups = RetrofitInstance.api.getGroups()
-                selectedGroup = groups.firstOrNull()
-            } catch (e: Exception) {
-                error = e.message
-            } finally {
-                loading = false
-            }
+            groups = RetrofitInstance.api.getGroups()
+        } catch (e: Exception) {
+            error = e.message
+        } finally {
+            loading = false
         }
+    }
 
-        LaunchedEffect(selectedGroup?.groupName) {
-            selectedGroup?.groupName?.let { groupName ->
-                loading = true
-                try {
-                    schedule = RetrofitInstance.api.getSchedule(
-                        groupName,
-                        "2026-01-12",
-                        "2026-01-17"
-                    )
-                } catch (e: Exception) {
-                    error = e.message
-                } finally {
-                    loading = false
-                }
-            }
+    // Загрузка расписания при смене группы
+    LaunchedEffect(selectedGroup) {
+        try {
+            loading = true
+            schedule = RetrofitInstance.api.getSchedule(
+                selectedGroup,
+                "2026-01-12",
+                "2026-01-17"
+            )
+        } catch (e: Exception) {
+            error = e.message
+        } finally {
+            loading = false
         }
+    }
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-                    title = {
-                        Text(selectedGroup?.groupName ?: "Select group")
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(selectedGroup)
+                },
+                actions = {
+                    IconButton(
+                        onClick = { onToggleFavorite(selectedGroup) }
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite)
+                                Icons.Default.Favorite
+                            else
+                                Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite"
+                        )
                     }
-                )
-            }
-        ) { padding ->
+                }
+            )
+        }
+    ) { padding ->
 
-            Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .padding(horizontal = 1.dp)
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+        ) {
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
             ) {
 
-                ExposedDropdownMenuBox(
+                OutlinedTextField(
+                    value = selectedGroup,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Group") },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
                     expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
+                    onDismissRequest = { expanded = false }
                 ) {
-
-                    OutlinedTextField(
-                        value = selectedGroup?.groupName ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Group") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        groups.forEach { group ->
-                            DropdownMenuItem(
-                                text = { Text(group.groupName ?: "Unknown") },
-                                onClick = {
-                                    selectedGroup = group
-                                    expanded = false
-                                }
-                            )
-
-                        }
+                    groups.forEach { group ->
+                        DropdownMenuItem(
+                            text = { Text(group.groupName) },
+                            onClick = {
+                                onGroupSelected(group.groupName)
+                                expanded = false
+                            }
+                        )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                when {
-                    loading -> CircularProgressIndicator()
-                    error != null -> Text("Error: $error")
-                    else -> ScheduleList(schedule)
-                }
+            when {
+                loading -> CircularProgressIndicator()
+                error != null -> Text("Error: $error")
+                else -> ScheduleList(schedule)
             }
         }
     }
+}
