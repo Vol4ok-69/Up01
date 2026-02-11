@@ -5,7 +5,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import com.example.collegeschedule.data.dto.ScheduleByDateDto
 import com.example.collegeschedule.data.network.RetrofitInstance
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen() {
 
@@ -27,9 +34,21 @@ fun ScheduleScreen() {
         }
     }
 
-    when {
-        loading -> CircularProgressIndicator()
-        error != null -> Text("Error: $error")
-        else -> ScheduleList(schedule)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("College Schedule") }
+            )
+        }
+    ) { padding ->
+
+        when {
+            loading -> CircularProgressIndicator()
+            error != null -> Text("Error: $error")
+            else -> Box(modifier = Modifier.padding(padding)) {
+                ScheduleList(schedule)
+            }
+        }
     }
 }
+
